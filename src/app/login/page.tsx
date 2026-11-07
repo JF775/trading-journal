@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import {
   Activity,
@@ -48,7 +49,63 @@ export default function LoginPage() {
       setErrorMsg('Google OAuth memerlukan pendaftaran redirect URI di Google Cloud Console. Anda dapat memilih akun Google langsung di bawah.');
       setShowGoogleModal(true);
     }
-  }, []);
+
+    const initGsi = () => {
+      const google = (window as any).google;
+      if (!google?.accounts?.id) return;
+
+      const clientId = '496753803291-upiine8jcdgvddb58pqr9uvbk90n6dnn.apps.googleusercontent.com';
+      try {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: any) => {
+            if (!response?.credential) return;
+            setIsGoogleLoading(true);
+            try {
+              const res = await loginWithGoogle({ credential: response.credential });
+              if (res.success) {
+                window.location.href = '/';
+              } else {
+                setErrorMsg(res.error || 'Gagal login via Google.');
+              }
+            } catch (err: any) {
+              setErrorMsg(err.message || 'Gagal login via Google.');
+            } finally {
+              setIsGoogleLoading(false);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const container = document.getElementById('google-native-btn-container');
+        if (container) {
+          google.accounts.id.renderButton(container, {
+            theme: 'filled_black',
+            size: 'large',
+            text: 'signin_with',
+            shape: 'rectangular',
+            width: 380,
+            logo_alignment: 'left',
+          });
+        }
+      } catch (e) {
+        console.warn('GSI init error:', e);
+      }
+    };
+
+    if ((window as any).google?.accounts?.id) {
+      initGsi();
+    } else {
+      const timer = setInterval(() => {
+        if ((window as any).google?.accounts?.id) {
+          initGsi();
+          clearInterval(timer);
+        }
+      }, 400);
+      return () => clearInterval(timer);
+    }
+  }, [loginWithGoogle]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +133,19 @@ export default function LoginPage() {
   const handleGoogleLogin = () => {
     setErrorMsg('');
     setIsGoogleLoading(true);
+
+    const google = (window as any).google;
+    if (google?.accounts?.id) {
+      try {
+        google.accounts.id.prompt((notification: any) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            window.location.href = '/api/auth/google';
+          }
+        });
+        return;
+      } catch (e) {}
+    }
+
     window.location.href = '/api/auth/google';
   };
 
@@ -154,8 +224,10 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* 1. DIRECT GOOGLE LOGIN BUTTON */}
+          {/* 1. DIRECT GOOGLE LOGIN BUTTON & NATIVE GSI CONTAINER */}
           <div className="space-y-2">
+            <div id="google-native-btn-container" className="w-full flex justify-center empty:hidden min-h-0"></div>
+
             <button
               type="button"
               onClick={handleGoogleLogin}
@@ -391,6 +463,8 @@ export default function LoginPage() {
         onClose={() => setShowGoogleModal(false)}
         onSuccess={() => router.push('/')}
       />
+
+      <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
 
     </div>
   );
