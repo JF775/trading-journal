@@ -68,6 +68,7 @@ interface AppContextType {
   register: (name: string, email: string, password: string, broker?: BrokerName) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: (customData?: { email?: string; name?: string; avatar?: string; credential?: string }) => Promise<{ success: boolean; error?: string; unconfigured?: boolean }>;
   logout: () => Promise<void>;
+  updateUser: (updatedData: Partial<User>) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -105,10 +106,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Role Previewer (Admin-only capability to test Client Starter, Client Affiliate, and VIP PRO views)
   const [previewRole, setPreviewRole] = useState<UserRole | null>(null);
 
-  // RBAC Computations
+  // Dynamic RBAC: Synchronizes user role with license tier in real-time
+  let computedRole: UserRole = (user?.role as UserRole) || 'client_starter';
+  if (user?.role !== 'admin') {
+    if (license?.tier === 'pro') {
+      computedRole = 'client_pro';
+    } else if (license?.tier === 'affiliate') {
+      computedRole = 'client_affiliate';
+    } else if (user?.role) {
+      computedRole = user.role as UserRole;
+    }
+  }
+
   const effectiveRole: UserRole = (user?.role === 'admin' && previewRole) 
     ? previewRole 
-    : ((user?.role as UserRole) || 'client_starter');
+    : computedRole;
   const packageDetails: RolePackageDetails = getRolePackageDetails(effectiveRole);
   // Strict rule: only real admin can test when not in preview role
   const canTest: boolean = user?.role === 'admin' && previewRole === null;
@@ -231,6 +243,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('jfzla_user');
   }, []);
 
+  const updateUser = useCallback((updatedData: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updatedData };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('jfzla_user', JSON.stringify(next));
+        } catch (e) {}
+      }
+      return next;
+    });
+  }, []);
+
   const t = useCallback((key: string): string => {
     return translate(key as any, lang);
   }, [lang]);
@@ -272,12 +297,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         'x-user-id': user.id
       };
 
-      const [resAnalytics, resTrades, resAccounts, resPlan, resLicense] = await Promise.all([
+      const [resAnalytics, resTrades, resAccounts, resPlan, resLicense, resMe] = await Promise.all([
         fetch(`/api/analytics?_t=${ts}${accParam}${userParam}`, { headers, cache: 'no-store' }).then(r => r.json()).catch(() => null),
         fetch(`/api/trades?_t=${ts}&limit=500${accParam}${userParam}`, { headers, cache: 'no-store' }).then(r => r.json()).catch(() => []),
         fetch(`/api/accounts?_t=${ts}${userParam}`, { headers, cache: 'no-store' }).then(r => r.json()).catch(() => []),
         fetch(`/api/trading-plan?_t=${ts}${userParam}`, { headers, cache: 'no-store' }).then(r => r.json()).catch(() => null),
-        fetch(`/api/license?_t=${ts}${userParam}`, { headers, cache: 'no-store' }).then(r => r.json()).catch(() => null)
+        fetch(`/api/license?_t=${ts}${userParam}`, { headers, cache: 'no-store' }).then(r => r.json()).catch(() => null),
+        fetch(`/api/auth/me?_t=${ts}${userParam}`, { headers, cache: 'no-store' }).then(r => r.json()).catch(() => null)
       ]);
 
       if (resAnalytics && !resAnalytics.error) setAnalytics(resAnalytics);
@@ -285,6 +311,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (Array.isArray(resAccounts)) setAccounts(resAccounts);
       if (resPlan && resPlan.title) setTradingPlan(resPlan);
       if (resLicense && resLicense.tier) setLicense(resLicense);
+      if (resMe?.success && resMe?.user) {
+        setUser(resMe.user);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('jfzla_user', JSON.stringify(resMe.user));
+          } catch (e) {}
+        }
+      }
     } catch (err) {
       console.error('Failed to load app data:', err);
     } finally {
@@ -408,7 +442,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         loginWithGoogle,
-        logout
+        logout,
+        updateUser
       }}
     >
       {children}

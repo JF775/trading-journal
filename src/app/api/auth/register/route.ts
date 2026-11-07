@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { registerUser } from '@/lib/db';
+import { prisma, hasNeonDatabase } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
@@ -31,6 +32,33 @@ export async function POST(req: Request) {
 
     const safeUser = { ...result.user };
     delete safeUser.password_hash;
+
+    if (hasNeonDatabase() && safeUser.email) {
+      try {
+        await prisma.user.upsert({
+          where: { email: safeUser.email },
+          update: {
+            name: safeUser.name || name.trim() || 'Trader',
+            role: safeUser.role || 'client_starter',
+            preferred_broker: safeUser.preferred_broker || 'Exness',
+            last_login: new Date()
+          },
+          create: {
+            id: safeUser.id,
+            name: safeUser.name || name.trim() || 'Trader',
+            email: safeUser.email,
+            avatar: safeUser.avatar || undefined,
+            provider: 'credentials',
+            password_hash: result.user?.password_hash,
+            role: safeUser.role || 'client_starter',
+            preferred_broker: safeUser.preferred_broker || 'Exness',
+            last_login: new Date()
+          }
+        });
+      } catch (prismaErr) {
+        console.warn('Neon upsert failed on register:', prismaErr);
+      }
+    }
 
     const response = NextResponse.json({
       success: true,

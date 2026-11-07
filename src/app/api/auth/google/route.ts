@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateWithGoogle } from '@/lib/db';
+import { prisma, hasNeonDatabase } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,31 @@ export async function POST(req: Request) {
     const result = authenticateWithGoogle(finalEmail, finalName, finalAvatar);
     const safeUser = { ...result.user };
     delete safeUser.password_hash;
+
+    if (hasNeonDatabase() && safeUser.email) {
+      try {
+        await prisma.user.upsert({
+          where: { email: safeUser.email },
+          update: {
+            name: safeUser.name,
+            avatar: safeUser.avatar || undefined,
+            last_login: new Date()
+          },
+          create: {
+            id: safeUser.id,
+            name: safeUser.name,
+            email: safeUser.email,
+            avatar: safeUser.avatar || undefined,
+            provider: 'google',
+            role: safeUser.role || 'client_starter',
+            preferred_broker: safeUser.preferred_broker || 'Exness',
+            last_login: new Date()
+          }
+        });
+      } catch (prismaErr) {
+        console.warn('Neon upsert failed on Google auth:', prismaErr);
+      }
+    }
 
     const response = NextResponse.json({
       success: true,

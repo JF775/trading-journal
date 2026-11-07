@@ -17,7 +17,7 @@ import { BrokerName } from '@/lib/types';
 import GlassSelect from '@/components/GlassSelect';
 
 export default function LicensePage() {
-  const { lang, t, license, refreshData, user, canTest, effectiveRole, packageDetails } = useApp();
+  const { lang, t, license, refreshData, user, canTest, effectiveRole, packageDetails, updateUser } = useApp();
 
   const [licenseKeyInput, setLicenseKeyInput] = useState<string>('');
   const [affiliateBrokerInput, setAffiliateBrokerInput] = useState<BrokerName>('Exness');
@@ -40,6 +40,9 @@ export default function LicensePage() {
       const data = await res.json();
       if (res.ok && data.success) {
         alert(data.message);
+        if (data.user) {
+          updateUser(data.user);
+        }
         setLicenseKeyInput('');
         await refreshData(true);
       } else {
@@ -72,6 +75,9 @@ export default function LicensePage() {
       const data = await res.json();
       if (res.ok && data.success) {
         alert(data.message);
+        if (data.user) {
+          updateUser(data.user);
+        }
         setAffiliateAccountInput('');
         await refreshData(true);
       } else {
@@ -94,6 +100,9 @@ export default function LicensePage() {
       });
       const data = await res.json();
       if (res.ok) {
+        if (data.user) {
+          updateUser(data.user);
+        }
         alert(data.message);
         await refreshData(true);
       }

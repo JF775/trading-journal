@@ -1585,6 +1585,8 @@ function loadUsersFromDisk(): User[] {
 
 export function saveUsersToDisk(users: User[]) {
   try {
+    memoryUsers = users;
+    isUsersInitialized = true;
     ensureDirectoryExists();
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
   } catch (err) {
@@ -1618,11 +1620,20 @@ export function getAllUsers(force = false): User[] {
 }
 
 export function findUserByEmail(email: string): User | undefined {
+  const cleanEmail = (email || '').trim().toLowerCase();
+  if (memoryUsers && memoryUsers.length > 0) {
+    const cached = memoryUsers.find(u => u.email.toLowerCase() === cleanEmail);
+    if (cached) return cached;
+  }
   const users = getAllUsers(true);
-  return users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+  return users.find(u => u.email.toLowerCase() === cleanEmail);
 }
 
 export function findUserById(id: string): User | undefined {
+  if (memoryUsers && memoryUsers.length > 0) {
+    const cached = memoryUsers.find(u => u.id === id);
+    if (cached) return cached;
+  }
   const users = getAllUsers(true);
   return users.find(u => u.id === id);
 }
