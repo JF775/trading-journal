@@ -12,7 +12,7 @@
 
 //--- Inputs
 input group "=== CentTrade Webhook Settings ==="
-input string InpServerUrl           = "http://localhost:3000/api/sync/mt5"; // Journal Sync API URL (or Vercel HTTPS)
+input string InpServerUrl           = "https://trading-journal-jfzla.vercel.app/api/sync/mt5"; // Journal Sync API URL (or Vercel HTTPS)
 input string InpStrategyTag         = "Cent Grid EA";                        // Strategy Tag
 input bool   InpSyncHistoryOnStart  = true;                                 // Sync Recent History on Attach?
 input int    InpSyncDays            = 7;                                    // History Days to Sync

@@ -22,7 +22,8 @@ async function runLocalSync() {
 
     const accounts = await prisma.brokerAccount.findMany({
       where: {
-        investor_password: { not: null }
+        investor_password: { not: null },
+        login: { notIn: ['20993412', '8839120', '1000101', '1100234'] }
       }
     });
 
