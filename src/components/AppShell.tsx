@@ -292,11 +292,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       const pass = newAccountForm.investor_password;
       const res = await fetch('/api/accounts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newAccountForm)
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || ''
+        },
+        body: JSON.stringify({
+          ...newAccountForm,
+          user_id: user?.id,
+          role: effectiveRole
+        })
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const createdAcc = await res.json();
         setShowAddAccountModal(false);
         setNewAccountForm({
           name: '',
@@ -309,18 +316,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           balance: 100000
         });
 
-        if (createdAcc?.id && pass && pass.trim().length > 0) {
+        if (data?.id && pass && pass.trim().length > 0) {
           try {
-            await fetch(`/api/accounts/${createdAcc.id}/sync`, { method: 'POST' });
-            setSelectedAccountId(createdAcc.id);
+            await fetch(`/api/accounts/${data.id}/sync`, { method: 'POST' });
+            setSelectedAccountId(data.id);
           } catch (syncErr) {
             console.warn('Auto-sync error after account creation:', syncErr);
           }
         }
         await refreshData(true);
+      } else {
+        alert(data.error || 'Gagal menambahkan akun broker.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding account:', err);
+      alert(err.message || 'Koneksi error');
     }
   };
 

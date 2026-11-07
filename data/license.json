@@ -1,22 +1,20 @@
 {
   "id": "user_main_license",
-  "tier": "affiliate",
+  "tier": "pro",
   "status": "active",
-  "owner_name": "Dea",
+  "owner_name": "PARAMORE",
+  "license_key": "PTRACK-PRO-2026-VIP",
   "created_at": "2026-11-07T13:01:51.424Z",
   "features": {
-    "max_mt5_accounts": 3,
+    "max_mt5_accounts": 99,
     "auto_sync_enabled": true,
     "allowed_brokers": [
-      "Exness",
-      "HFM",
-      "Valetax"
+      "ALL"
     ],
-    "sync_interval_minutes": 60,
+    "sync_interval_minutes": 15,
     "export_enabled": true,
-    "priority_bridge": false
+    "priority_bridge": true
   },
   "affiliate_broker": "Exness",
-  "affiliate_account": "23422",
-  "expires_at": "Lifetime (Affiliate Active)"
+  "expires_at": "2027-11-08"
 }

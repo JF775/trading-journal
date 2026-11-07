@@ -182,18 +182,19 @@ export function getAccountById(id: string, userId?: string): BrokerAccount | und
   };
 }
 
-export function addAccount(data: Partial<BrokerAccount>, userId?: string): BrokerAccount {
+export function addAccount(data: Partial<BrokerAccount>, userId?: string, roleOverride?: UserRole): BrokerAccount {
   initAccountsDB();
   const targetUserId = userId || data.user_id;
 
   if (targetUserId) {
     const user = findUserById(targetUserId);
-    if (user && user.role !== 'admin') {
+    const role = roleOverride || user?.role || 'client_starter';
+    if (role !== 'admin' && role !== 'client_pro') {
       const existingUserAccounts = memoryAccounts.filter(a => a.user_id === targetUserId);
-      if (user.role === 'client_starter' && existingUserAccounts.length >= 1) {
+      if (role === 'client_starter' && existingUserAccounts.length >= 1) {
         throw new Error('Batas akun MT5 tercapai: Paket Starter (Gratis) dibatasi maksimal 1 akun. Hubungkan akun broker mitra atau upgrade ke VIP PRO.');
       }
-      if (user.role === 'client_affiliate') {
+      if (role === 'client_affiliate') {
         if (existingUserAccounts.length >= 3) {
           throw new Error('Batas akun partner tercapai: Paket Affiliate dibatasi maksimal 3 akun MT5.');
         }
