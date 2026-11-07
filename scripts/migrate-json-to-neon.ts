@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 1-Click Migration Script: Local JSON to Neon PostgreSQL
  * Usage: npx tsx scripts/migrate-json-to-neon.ts

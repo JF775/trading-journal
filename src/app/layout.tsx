@@ -15,8 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JFZLA Journal | Forex & Cent EA Glass Trading Journal",
-  description: "Sophisticated Green & Red Glassmorphism Forex & Cent EA Trading Journal with Real-time MT5 Investor Sync, Drawdown Tracking & Trade Review",
+  title: "JFZLA Journal | Forex Trading Journal",
 };
 
 export default function RootLayout({
