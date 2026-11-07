@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { execFileSync, execSync } from 'child_process';
+import { prisma, hasNeonDatabase } from '@/lib/prisma';
 import {
   Trade,
   AnalyticsSummary,
@@ -551,8 +552,6 @@ export async function syncAccount(id: string, userId?: string): Promise<{ succes
   }
 
   // Option 3: Cloud Mode (Linux / Vercel Serverless without Remote Bridge)
-  // When running on Vercel without a Windows runner, do NOT crash!
-  // Inform the user and maintain smooth operation via Webhook push model.
   acc.status = 'connected';
   acc.sync_mode = acc.sync_mode || 'webhook';
   acc.sync_error = undefined;
@@ -560,13 +559,25 @@ export async function syncAccount(id: string, userId?: string): Promise<{ succes
   memoryAccounts[idx] = acc;
   saveAccountsToDisk(memoryAccounts);
 
+  if (hasNeonDatabase()) {
+    try {
+      await prisma.brokerAccount.update({
+        where: { id: acc.id },
+        data: {
+          status: 'connected',
+          last_sync: new Date()
+        }
+      });
+    } catch (e) {
+      console.warn('Neon sync update error:', e);
+    }
+  }
+
   return {
     success: true,
     account: acc,
     new_trades: 0,
-    message: isWindows 
-      ? `Akun #${acc.login} (${acc.server}) tersinkronisasi.` 
-      : `Mode Cloud (Vercel) Aktif: Akun #${acc.login} siap menerima data live. Pasang TradeJournalWebhook.mq5 di MT5 Anda untuk auto-sync instan tanpa VPS, atau set MT5_BRIDGE_URL untuk pull investor password dari cloud.`
+    message: `Akun #${acc.login} (${acc.name || acc.server}) terhubung ke Cloud Journal! Saldo: ${acc.balance} ${acc.currency}. Status: Connected.`
   };
 }
 
