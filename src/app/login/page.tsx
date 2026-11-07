@@ -54,7 +54,7 @@ export default function LoginPage() {
       const google = (window as any).google;
       if (!google?.accounts?.id) return;
 
-      const clientId = '496753803291-upiine8jcdgvddb58pqr9uvbk90n6dnn.apps.googleusercontent.com';
+      const clientId = '321836199993-qejo20qav2qu1l6oh9o26909p5gqdk5b.apps.googleusercontent.com';
       try {
         google.accounts.id.initialize({
           client_id: clientId,
