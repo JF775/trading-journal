@@ -47,8 +47,9 @@ export async function GET(request: NextRequest) {
 
     if (!tokenRes.ok || !tokenData.access_token) {
       console.error('Google token exchange failed:', tokenData);
+      const errHint = !clientSecret ? ' (Pastikan GOOGLE_CLIENT_SECRET sudah dimasukkan ke Environment Variables Vercel)' : '';
       return NextResponse.redirect(
-        `${origin}/login?error=${encodeURIComponent(tokenData.error_description || 'Gagal memvalidasi token dari Google.')}`
+        `${origin}/login?error=${encodeURIComponent((tokenData.error_description || tokenData.error || 'Gagal memvalidasi token dari Google.') + errHint)}`
       );
     }
 
