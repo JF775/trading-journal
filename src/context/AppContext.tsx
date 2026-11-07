@@ -109,9 +109,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Dynamic RBAC: Synchronizes user role with license tier in real-time
   let computedRole: UserRole = (user?.role as UserRole) || 'client_starter';
   if (user?.role !== 'admin') {
-    if (license?.tier === 'pro') {
+    if (license?.tier === 'pro' || user?.role === 'client_pro') {
       computedRole = 'client_pro';
-    } else if (license?.tier === 'affiliate') {
+    } else if (license?.tier === 'affiliate' || user?.role === 'client_affiliate') {
       computedRole = 'client_affiliate';
     } else if (user?.role) {
       computedRole = user.role as UserRole;

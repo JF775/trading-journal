@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
     if (hasNeonDatabase() && safeUser.email) {
       try {
-        await prisma.user.upsert({
+        const dbUser = await prisma.user.upsert({
           where: { email: safeUser.email },
           update: {
             name: safeUser.name,
@@ -101,6 +101,11 @@ export async function POST(req: Request) {
             last_login: new Date()
           }
         });
+        if (dbUser) {
+          safeUser.role = dbUser.role as any;
+          safeUser.id = dbUser.id;
+          if (dbUser.preferred_broker) safeUser.preferred_broker = dbUser.preferred_broker as any;
+        }
       } catch (prismaErr) {
         console.warn('Neon upsert failed on Google auth:', prismaErr);
       }

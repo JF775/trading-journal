@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     if (hasNeonDatabase() && safeUser.email) {
       try {
-        await prisma.user.upsert({
+        const dbUser = await prisma.user.upsert({
           where: { email: safeUser.email },
           update: {
             name: safeUser.name || name.trim() || 'Trader',
@@ -55,6 +55,10 @@ export async function POST(req: Request) {
             last_login: new Date()
           }
         });
+        if (dbUser) {
+          safeUser.id = dbUser.id;
+          safeUser.role = dbUser.role as any;
+        }
       } catch (prismaErr) {
         console.warn('Neon upsert failed on register:', prismaErr);
       }

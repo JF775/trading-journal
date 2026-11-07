@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { authenticateUser } from '@/lib/db';
+import { prisma, hasNeonDatabase } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -21,9 +24,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // Strip password_hash before returning
     const safeUser = { ...result.user };
     delete safeUser.password_hash;
+
+    // Synchronize authoritative role and profile from Neon DB if connected
+    if (hasNeonDatabase() && safeUser.email) {
+      try {
+        const dbUser = await prisma.user.findFirst({
+          where: { email: safeUser.email.toLowerCase().trim() }
+        });
+        if (dbUser) {
+          safeUser.role = dbUser.role as any;
+          safeUser.id = dbUser.id;
+          if (dbUser.preferred_broker) safeUser.preferred_broker = dbUser.preferred_broker as any;
+        }
+      } catch (e) {
+        console.warn('Neon check in login failed:', e);
+      }
+    }
 
     const response = NextResponse.json({
       success: true,
@@ -31,11 +49,10 @@ export async function POST(req: Request) {
       message: 'Login berhasil! Selamat datang kembali.'
     });
 
-    // Set auth cookie for session persistence
     response.cookies.set('jfzla_user_session', String(safeUser.id || ''), {
-      httpOnly: false, // accessible to client for smooth sync
+      httpOnly: false,
       path: '/',
-      maxAge: 60 * 60 * 24 * 30 // 30 days
+      maxAge: 60 * 60 * 24 * 30
     });
 
     return response;
