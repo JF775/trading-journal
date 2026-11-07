@@ -154,7 +154,7 @@ async function migrate() {
 
     // Ensure valid account_id exists in db
     const availableAccounts = await prisma.brokerAccount.findMany({ select: { id: true } });
-    const accountIds = new Set(availableAccounts.map(acc => acc.id));
+    const accountIds = new Set(availableAccounts.map((acc: { id: string }) => acc.id));
 
     for (const t of trades) {
       if (!accountIds.has(t.account_id)) {

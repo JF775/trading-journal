@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
     if (fs.existsSync(tradesPath)) {
       const trades = JSON.parse(fs.readFileSync(tradesPath, 'utf-8'));
       const availableAccounts = await prisma.brokerAccount.findMany({ select: { id: true } });
-      const accountIds = new Set(availableAccounts.map(acc => acc.id));
+      const accountIds = new Set(availableAccounts.map((acc: { id: string }) => acc.id));
 
       for (const t of trades) {
         if (!accountIds.has(t.account_id)) continue;
