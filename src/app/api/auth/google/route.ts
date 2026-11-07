@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const isCheck = searchParams.get('check') === '1';
 
-  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+  const DEFAULT_GOOGLE_CLIENT_ID = '496753803291-upiine8jcdgvddb58pqr9uvbk90n6dnn.apps.googleusercontent.com';
+  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
   const isConfigured = Boolean(clientId && clientId.trim().length > 5);
 
   if (isCheck) {
