@@ -898,11 +898,11 @@ export function reseedDemoTrades(): Trade[] {
   return memoryTrades;
 }
 
-export function calculateAnalytics(accountId?: string, userId?: string): AnalyticsSummary {
+export function calculateAnalytics(accountId?: string, userId?: string, tradesOverride?: Trade[]): AnalyticsSummary {
   initDB();
   initAccountsDB();
 
-  const sourceTrades = getAllTrades({
+  const sourceTrades = tradesOverride || getAllTrades({
     account_id: accountId && accountId !== 'all' ? accountId : undefined,
     userId
   });

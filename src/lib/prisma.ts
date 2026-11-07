@@ -7,8 +7,15 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
+const DEFAULT_NEON_DATABASE_URL =
+  "postgresql://neondb_owner:npg_d3JDH2ulKwIV@ep-damp-snow-a13riy99-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+
+export function getDatabaseUrl(): string {
+  return process.env.DATABASE_URL || DEFAULT_NEON_DATABASE_URL;
+}
+
 export function hasNeonDatabase(): boolean {
-  const url = process.env.DATABASE_URL || '';
+  const url = getDatabaseUrl();
   return url.startsWith('postgres://') || url.startsWith('postgresql://');
 }
 
@@ -17,7 +24,7 @@ function getPrismaClient(): PrismaClient {
     return globalForPrisma.prisma;
   }
 
-  const connectionString = process.env.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy';
+  const connectionString = getDatabaseUrl();
   const pool = new Pool({ connectionString });
   const adapter = new PrismaPg(pool);
 

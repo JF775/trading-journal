@@ -7,8 +7,8 @@ import { UserRole } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  initAccountsDB(true);
-  initDB(true);
+  initAccountsDB(false);
+  initDB(false);
   const headerId = request.headers.get('x-user-id');
   const { searchParams } = new URL(request.url);
   const queryId = searchParams.get('userId');
@@ -32,13 +32,21 @@ export async function GET(request: NextRequest) {
       if (dbUser) {
         user = dbUser;
         const neonAccounts = await prisma.brokerAccount.findMany({
-          where: { user_id: dbUser.id }
+          where: dbUser.role === 'admin' ? undefined : { user_id: dbUser.id },
+          include: {
+            _count: {
+              select: { trades: true }
+            }
+          },
+          orderBy: { created_at: 'desc' }
         });
-        if (neonAccounts && neonAccounts.length > 0) {
-          return NextResponse.json(neonAccounts, {
-            headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
-          });
-        }
+
+        return NextResponse.json(neonAccounts.map(a => ({
+          ...a,
+          trades_count: a._count?.trades || 0
+        })), {
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+        });
       }
     } catch (e) {
       console.warn('Neon accounts GET lookup error:', e);
@@ -102,12 +110,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Role-based account limit check
+    if (authoritativeRole !== 'admin' && authoritativeRole !== 'client_pro' && user?.id && hasNeonDatabase()) {
+      try {
+        const existingCount = await prisma.brokerAccount.count({
+          where: { user_id: user.id }
+        });
+        if (authoritativeRole === 'client_starter' && existingCount >= 1) {
+          return NextResponse.json(
+            { error: 'Batas akun MT5 tercapai: Paket Starter (Gratis) dibatasi maksimal 1 akun. Hubungkan akun broker mitra atau upgrade ke VIP PRO.' },
+            { status: 400 }
+          );
+        }
+        if (authoritativeRole === 'client_affiliate' && existingCount >= 3) {
+          return NextResponse.json(
+            { error: 'Batas akun partner tercapai: Paket Affiliate dibatasi maksimal 3 akun MT5.' },
+            { status: 400 }
+          );
+        }
+      } catch (countErr) {
+        console.warn('Account count check error:', countErr);
+      }
+    }
+
     const userId = user?.id || targetId || 'default_user';
     const newAccount = addAccount(body, userId, authoritativeRole);
 
+    let savedAccount: any = newAccount;
+
     if (hasNeonDatabase() && user?.id) {
       try {
-        await prisma.brokerAccount.upsert({
+        const upserted = await prisma.brokerAccount.upsert({
           where: {
             login_server: {
               login: String(newAccount.login),
@@ -115,8 +148,13 @@ export async function POST(request: NextRequest) {
             }
           },
           update: {
+            user_id: user.id, // Reassign to current user
             name: newAccount.name,
             broker: newAccount.broker,
+            investor_password: newAccount.investor_password || null,
+            account_type: newAccount.account_type || 'cent',
+            currency: newAccount.currency || 'USD',
+            leverage: newAccount.leverage || 500,
             balance: newAccount.balance,
             equity: newAccount.equity,
             floating_pnl: newAccount.floating_pnl,
@@ -140,12 +178,16 @@ export async function POST(request: NextRequest) {
             created_at: new Date()
           }
         });
+        savedAccount = {
+          ...upserted,
+          trades_count: 0
+        };
       } catch (neonAccErr) {
         console.warn('Neon brokerAccount create error:', neonAccErr);
       }
     }
 
-    return NextResponse.json(newAccount, { status: 201 });
+    return NextResponse.json(savedAccount, { status: 201 });
   } catch (error: any) {
     console.error('Error adding broker account:', error);
     return NextResponse.json({ error: error.message || 'Gagal menambahkan akun broker.' }, { status: 400 });

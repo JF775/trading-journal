@@ -1,8 +1,8 @@
 [
   {
-    "id": "acc_exness_1794062369299",
-    "user_id": "usr_1794062332047_git36",
-    "name": "Test aja",
+    "id": "acc_exness_183766634",
+    "user_id": "usr_google_paramore",
+    "name": "Road To 10000 Cent",
     "broker": "Exness",
     "server": "Exness-MT5Real25",
     "login": "183766634",
@@ -10,13 +10,13 @@
     "account_type": "cent",
     "currency": "USC",
     "leverage": 2000,
-    "balance": 100000,
-    "equity": 100000,
+    "balance": 2106.2,
+    "equity": 2106.2,
     "floating_pnl": 0,
-    "status": "error",
-    "last_sync": "2026-11-07T14:39:29.299Z",
-    "created_at": "2026-11-07T14:39:29.299Z",
-    "sync_error": "Akses Terbatas: Paket FREE hanya mendukung jurnal manual. Hubungkan akun broker Affiliasi (Exness/HFM/Valetax) atau masukkan lisensi PRO VIP untuk mengaktifkan MT5 Auto-Sync."
+    "status": "connected",
+    "last_sync": "2026-11-07T17:31:19.197Z",
+    "created_at": "2026-11-07T17:31:19.197Z",
+    "sync_mode": "local"
   },
   {
     "id": "acc_exness_1794057399319",

@@ -28,6 +28,7 @@ interface AppContextType {
   analytics: AnalyticsSummary | null;
   trades: Trade[];
   accounts: BrokerAccount[];
+  setAccounts: React.Dispatch<React.SetStateAction<BrokerAccount[]>>;
   license: UserLicense | null;
   tradingPlan: TradingPlan | null;
   setTradingPlan: React.Dispatch<React.SetStateAction<TradingPlan | null>>;
@@ -410,6 +411,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         analytics,
         trades,
         accounts,
+        setAccounts,
         license,
         tradingPlan,
         setTradingPlan,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateWithGoogle } from '@/lib/db';
+import { prisma, hasNeonDatabase } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,37 @@ export async function GET(request: NextRequest) {
 
     const safeUser = { ...result.user };
     delete safeUser.password_hash;
+
+    // Sync with Neon DB
+    if (hasNeonDatabase() && safeUser.email) {
+      try {
+        const dbUser = await prisma.user.upsert({
+          where: { email: safeUser.email },
+          update: {
+            name: safeUser.name,
+            avatar: safeUser.avatar || undefined,
+            last_login: new Date()
+          },
+          create: {
+            id: safeUser.id,
+            name: safeUser.name,
+            email: safeUser.email,
+            avatar: safeUser.avatar || undefined,
+            provider: 'google',
+            role: safeUser.role || 'client_starter',
+            preferred_broker: safeUser.preferred_broker || 'Exness',
+            last_login: new Date()
+          }
+        });
+        if (dbUser) {
+          safeUser.role = dbUser.role as any;
+          safeUser.id = dbUser.id;
+          if (dbUser.preferred_broker) safeUser.preferred_broker = dbUser.preferred_broker as any;
+        }
+      } catch (prismaErr) {
+        console.warn('Neon upsert failed on Google callback:', prismaErr);
+      }
+    }
 
     // 4. Set session cookie and redirect to dashboard
     const response = NextResponse.redirect(`${origin}/`);

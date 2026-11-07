@@ -31,7 +31,7 @@ import {
   User as UserIcon
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { BrokerName, BROKER_PRESETS } from '@/lib/types';
+import { BrokerName, BROKER_PRESETS, BrokerAccount } from '@/lib/types';
 import GlassSelect from '@/components/GlassSelect';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -47,6 +47,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     selectedAccountId,
     setSelectedAccountId,
     accounts,
+    setAccounts,
     trades,
     license,
     refreshData,
@@ -316,10 +317,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           balance: 100000
         });
 
+        if (data?.id) {
+          setAccounts((prev: BrokerAccount[]) => {
+            const filtered = prev.filter((a: BrokerAccount) => a.id !== data.id && !(a.login === data.login && a.server === data.server));
+            return [data, ...filtered];
+          });
+          setSelectedAccountId(data.id);
+        }
+
         if (data?.id && pass && pass.trim().length > 0) {
           try {
-            await fetch(`/api/accounts/${data.id}/sync`, { method: 'POST' });
-            setSelectedAccountId(data.id);
+            await fetch(`/api/accounts/${data.id}/sync`, {
+              method: 'POST',
+              headers: { 'x-user-id': user?.id || '' }
+            });
           } catch (syncErr) {
             console.warn('Auto-sync error after account creation:', syncErr);
           }
