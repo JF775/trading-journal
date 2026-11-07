@@ -1,0 +1,123 @@
+// Prisma Schema for JFZLA CentTrade & Forex Journal
+// Powered by PostgreSQL managed on Neon (Serverless Postgres)
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String          @id @default(uuid())
+  name             String
+  email            String          @unique
+  avatar           String?
+  provider         String          @default("credentials") // credentials | google
+  password_hash    String?
+  role             String          @default("client_starter") // admin | client_pro | client_affiliate | client_starter
+  preferred_broker String?         @default("Exness")
+  created_at       DateTime        @default(now())
+  last_login       DateTime?
+
+  accounts         BrokerAccount[]
+  plans            TradingPlan[]
+  licenses         UserLicense[]
+
+  @@index([email])
+}
+
+model BrokerAccount {
+  id                String    @id @default(uuid())
+  user_id           String
+  name              String
+  broker            String
+  server            String
+  login             String
+  investor_password String?
+  account_type      String    @default("cent") // cent | standard
+  currency          String    @default("USD")
+  leverage          Int       @default(500)
+  balance           Float     @default(0)
+  equity            Float     @default(0)
+  floating_pnl      Float     @default(0)
+  status            String    @default("connected") // connected | syncing | error | disconnected
+  sync_mode         String    @default("local")     // local | remote | webhook | demo
+  sync_error        String?
+  last_sync         DateTime?
+  created_at        DateTime  @default(now())
+  trades_count      Int       @default(0)
+
+  user              User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  trades            Trade[]
+
+  @@unique([login, server])
+  @@index([user_id])
+}
+
+model Trade {
+  id               String    @id @default(uuid())
+  ticket           String
+  account_id       String
+  user_id          String?
+  symbol           String
+  order_type       String    // BUY | SELL
+  lots             Float
+  open_price       Float
+  close_price      Float
+  open_time        DateTime?
+  close_time       DateTime
+  profit           Float
+  commission       Float     @default(0)
+  swap             Float     @default(0)
+  strategy         String    @default("Manual")
+  session          String?
+  notes            String?
+  rule_followed    Boolean   @default(true)
+  psychology_state String?
+  mistake_tag      String?
+  mae              Float?
+  mfe              Float?
+  screenshot_url   String?
+  is_reviewed      Boolean   @default(false)
+  reviewed_at      DateTime?
+
+  account          BrokerAccount @relation(fields: [account_id], references: [id], onDelete: Cascade)
+
+  @@unique([account_id, ticket])
+  @@index([account_id, close_time(sort: Desc)])
+  @@index([user_id, is_reviewed])
+}
+
+model TradingPlan {
+  id                 String    @id @default(uuid())
+  user_id            String
+  title              String
+  max_risk_per_trade Float?    @default(1.0)
+  max_daily_loss     Float?    @default(3.0)
+  profit_target      Float?    @default(5.0)
+  trading_sessions   String?   // JSON string of active sessions
+  rules              String?   // JSON string of rules array
+  checklists         String?   // JSON string of checklists array
+  content            String?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime?
+
+  user               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model UserLicense {
+  id           String    @id @default(uuid())
+  user_id      String    @unique
+  license_key  String    @unique
+  package_type String    @default("starter") // starter | affiliate | pro | vip
+  status       String    @default("active")  // active | expired | revoked
+  features     String?   // JSON string of allowed features
+  expires_at   DateTime?
+  created_at   DateTime  @default(now())
+
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}

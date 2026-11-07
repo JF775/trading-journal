@@ -1,0 +1,41 @@
+{
+  "id": "default_plan",
+  "title": "Cent & EA Discipline Master Plan",
+  "max_daily_loss": 750,
+  "max_risk_per_trade_pct": 2,
+  "max_open_trades": 5,
+  "allowed_sessions": [
+    "New York",
+    "London",
+    "Asian"
+  ],
+  "setups": [
+    "Cent Grid EA Martingale",
+    "London Session Breakout",
+    "XAUUSD Liquidity Sweep",
+    "Trend Pullback (EMA 50/200)",
+    "Order Block Reversal"
+  ],
+  "entry_checklist": [
+    {
+      "item": "Trend alignment on H1 & H4 timeframe",
+      "required": true
+    },
+    {
+      "item": "Key support/resistance or order block confirmed",
+      "required": true
+    },
+    {
+      "item": "Risk-to-Reward ratio minimum 1:2",
+      "required": true
+    },
+    {
+      "item": "No high-impact news within 30 minutes",
+      "required": true
+    },
+    {
+      "item": "Lot size strictly calculated within 1.5% risk limit",
+      "required": true
+    }
+  ]
+}
